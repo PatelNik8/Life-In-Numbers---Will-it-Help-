@@ -1,0 +1,210 @@
+// This is your Prisma schema file
+// Learn more: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// AUTH MODELS (NextAuth v5)
+// ─────────────────────────────────────────────────────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?   // hashed bcrypt password (for email/password auth)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  accounts    Account[]
+  sessions    Session[]
+  dailyLogs   DailyLog[]
+  habits      Habit[]
+  insights    Insight[]
+  settings    UserSettings?
+
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// USER SETTINGS
+// ─────────────────────────────────────────────────────────────────────
+
+model UserSettings {
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  timezone       String   @default("UTC")
+  weeklyDigest   Boolean  @default(true)
+  enabledMetrics String[] @default(["sleepHours", "waterLiters", "studyHours", "exerciseMinutes", "mood", "screenTimeHours", "stepsCount", "caloriesConsumed", "meditationMins", "socialTime"])
+  theme          String   @default("dark")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_settings")
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// DAILY LOG (Core Metrics)
+// ─────────────────────────────────────────────────────────────────────
+
+model DailyLog {
+  id        String   @id @default(cuid())
+  userId    String
+  date      DateTime @db.Date       // Only date portion (YYYY-MM-DD)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // ── Core Metrics ────────────────────────────────────────────────
+  sleepHours       Float?   // Hours slept        (ideal: 7–9)
+  sleepQuality     Int?     // 1–10 quality scale
+  waterLiters      Float?   // Liters consumed    (ideal: 2+)
+  studyHours       Float?   // Hours of focused work/study
+  exerciseMinutes  Int?     // Minutes of exercise (ideal: 30+)
+  exerciseType     String?  // e.g., "running", "gym", "yoga"
+  mood             Int?     // 1–10 mood score
+  energyLevel      Int?     // 1–10 energy level
+  screenTimeHours  Float?   // Total screen time   (lower is better)
+  stepsCount       Int?     // Daily step count    (ideal: 10000+)
+  caloriesConsumed Int?     // Calories eaten
+  meditationMins   Int?     // Minutes of meditation/mindfulness
+  socialTime       Float?   // Hours of social interaction
+  journalPages     Int?     // Number of journal pages written
+  gratitudeItems   Int?     // Number of gratitude entries
+
+  // ── Custom Metrics (user-defined key-value pairs) ────────────────
+  customMetrics Json? // e.g., { "guitar_practice": 30, "cold_shower": true }
+
+  // ── Computed Fields ──────────────────────────────────────────────
+  lifeScore     Float?  // Cached computed life score (0–100)
+  noteForDay    String? // Optional free-text note for the day
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@index([userId, date])
+  @@map("daily_logs")
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// HABITS
+// ─────────────────────────────────────────────────────────────────────
+
+model Habit {
+  id          String   @id @default(cuid())
+  userId      String
+  name        String
+  description String?
+  icon        String?          // Emoji or icon key
+  color       String?          // Hex color for the habit card
+  category    String           // health | focus | fitness | mindfulness | social | personal
+  targetValue Float            // Target value (e.g., 8 for 8 hours, 1 for true/false)
+  unit        String           // hours | liters | minutes | steps | boolean | pages | count
+  frequency   String  @default("daily")  // daily | weekly | custom
+  cue         String?          // Atomic habit: cue
+  reward      String?          // Atomic habit: reward
+  stackedWith String?          // Habit stacking — id of another habit
+  isActive    Boolean @default(true)
+  order       Int     @default(0) // Display order in habit list
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user  User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  logs  HabitLog[]
+
+  @@index([userId, isActive])
+  @@map("habits")
+}
+
+model HabitLog {
+  id          String   @id @default(cuid())
+  habitId     String
+  date        DateTime @db.Date
+  value       Float              // Actual logged value
+  completed   Boolean            // value >= target
+  streak      Int      @default(0) // Consecutive days streak
+  note        String?
+  createdAt   DateTime @default(now())
+
+  habit Habit @relation(fields: [habitId], references: [id], onDelete: Cascade)
+
+  @@unique([habitId, date])
+  @@index([habitId, date])
+  @@map("habit_logs")
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// INSIGHTS
+// ─────────────────────────────────────────────────────────────────────
+
+model Insight {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String   // weekly_summary | ai_tip | correlation | prediction | milestone
+  title     String
+  body      String   @db.Text
+  data      Json?    // Supporting data for embedded charts
+  icon      String?  // Emoji or icon key
+  color     String?  // Card accent color
+  weekNum   Int?     // ISO week number
+  year      Int?
+  isRead    Boolean  @default(false)
+  isPinned  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("insights")
+}
