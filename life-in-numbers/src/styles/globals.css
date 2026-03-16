@@ -1,7 +1,7 @@
-@import "tailwindcss";
-
-/* ─── Google Fonts ──────────────────────────────────────────────────────────── */
+/* ─── Google Fonts — Must come FIRST before any other rules ─────────────────── */
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap");
+
+@import "tailwindcss";
 
 /* ─── CSS Custom Properties (Design Tokens) ─────────────────────────────────── */
 :root {
@@ -14,15 +14,15 @@
   --bg-glass-strong:   rgba(255, 255, 255, 0.10);
 
   /* Brand Colors */
-  --color-primary:     #6366f1;   /* Indigo */
+  --color-primary:     #6366f1;
   --color-primary-glow:#6366f180;
-  --color-accent:      #22d3ee;   /* Cyan */
+  --color-accent:      #22d3ee;
   --color-accent-glow: #22d3ee60;
-  --color-success:     #10b981;   /* Emerald */
-  --color-warning:     #f59e0b;   /* Amber */
-  --color-danger:      #ef4444;   /* Red */
-  --color-purple:      #a78bfa;   /* Violet */
-  --color-pink:        #f472b6;   /* Pink */
+  --color-success:     #10b981;
+  --color-warning:     #f59e0b;
+  --color-danger:      #ef4444;
+  --color-purple:      #a78bfa;
+  --color-pink:        #f472b6;
 
   /* Text */
   --text-primary:   #f1f5f9;
@@ -84,7 +84,7 @@ body {
   color: #fff;
 }
 
-/* ─── Glassmorphism Utility Classes ─────────────────────────────────────────── */
+/* ─── Glassmorphism ─────────────────────────────────────────────────────────── */
 .glass {
   background: var(--bg-glass);
   backdrop-filter: blur(20px);
@@ -135,7 +135,7 @@ body {
 .glow-success { box-shadow: 0 0 30px rgba(16, 185, 129, 0.3); }
 .glow-warning { box-shadow: 0 0 30px rgba(245, 158, 11, 0.3); }
 
-/* ─── Background Mesh / Gradient ────────────────────────────────────────────── */
+/* ─── Background Mesh ────────────────────────────────────────────────────────── */
 .bg-mesh {
   background-image:
     radial-gradient(ellipse at 20% 50%, rgba(99, 102, 241, 0.06) 0%, transparent 60%),
@@ -196,26 +196,13 @@ body {
   transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* ─── Score Ring ─────────────────────────────────────────────────────────────── */
-.score-ring {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
 /* ─── Habit Card ──────────────────────────────────────────────────────────────── */
 .habit-card-completed {
   border-color: rgba(16, 185, 129, 0.4) !important;
   background: rgba(16, 185, 129, 0.05) !important;
 }
 
-/* ─── Tooltip ─────────────────────────────────────────────────────────────────── */
-[data-tooltip] {
-  position: relative;
-}
-
-/* ─── Number animation utility ───────────────────────────────────────────────── */
+/* ─── Tabular numbers ─────────────────────────────────────────────────────────── */
 .tabular-nums {
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum";
